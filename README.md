@@ -1,4 +1,4 @@
-# ShEx-s
+# Shape Maps
 
 Scala implementation of [Shape Maps](https://shexspec.github.io/shape-map/)
 
