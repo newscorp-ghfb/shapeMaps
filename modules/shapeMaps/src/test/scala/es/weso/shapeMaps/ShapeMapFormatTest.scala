@@ -1,7 +1,9 @@
 package es.weso.shapeMaps
 import org.scalatest._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class ShapeMapFormatTest extends FunSpec with Matchers with TryValues with OptionValues {
+class ShapeMapFormatTest extends AnyFunSpec with Matchers with TryValues with OptionValues {
 
   describe("ShapeMapFormat") {
 

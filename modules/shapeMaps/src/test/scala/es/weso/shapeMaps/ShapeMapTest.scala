@@ -6,8 +6,11 @@ import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf._
 import es.weso.rdf.path.PredicatePath
 import cats.effect.IO
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.funspec.AnyFunSpec
 
-class ShapeMapTest extends FunSpec with Matchers with TryValues with OptionValues {
+
+class ShapeMapTest extends AnyFunSpec with Matchers with TryValues with OptionValues {
 
   describe("ShapeMaps") {
 
