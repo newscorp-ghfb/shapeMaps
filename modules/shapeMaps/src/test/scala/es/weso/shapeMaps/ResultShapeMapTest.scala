@@ -51,16 +51,21 @@ class ResultShapeMapTest extends AnyFunSpec with Matchers with TryValues with Op
           |:x :p 1 .
         """.stripMargin
 
-      val (rdf,result) = (for {
-        rdf <- RDFAsJenaModel.fromChars(rdfStr,"TURTLE",None)
-        resultMap <- ShapeMap.parseResultMap(":x@!:S", None, rdf, rdf.getPrefixMap)
-      } yield (rdf,resultMap)).unsafeRunSync
-
+      val r = RDFAsJenaModel.fromChars(rdfStr,"TURTLE",None).use(
+        rdf => for {
+        pm <- rdf.getPrefixMap
+        resultMap <- ShapeMap.parseResultMap(":x@!:S", None, rdf, pm)
+      } yield (resultMap,pm))
       val x = IRI("http://example.org/x")
       val s = IRILabel(IRI("http://example.org/S"))
-      val r: ResultShapeMap = ResultShapeMap(Map(x -> Map(s -> Info(NonConformant, None, None))), rdf.getPrefixMap, rdf.getPrefixMap)
-      println(s"Result: $result\nr=$r")
-      result should be(r)
+      r.attempt.unsafeRunSync().fold(
+        e => fail(s"Error: $e"),
+        pair => {
+          val (rm,pm) = pair
+          val result: ResultShapeMap = ResultShapeMap(Map(x -> Map(s -> Info(NonConformant, None, None))), pm, pm)
+          rm should be(result)
+        }
+      )
     }
   }
 

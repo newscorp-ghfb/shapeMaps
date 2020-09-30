@@ -93,14 +93,18 @@ object ShapeMap {
     str: String,
     base: Option[IRI],
     rdf: RDFReader,
-    shapesPrefixMap: PrefixMap = PrefixMap.empty): IO[ResultShapeMap] = for {
-    queryMap <- IO {
-      Parser.parse(str, base, rdf.getPrefixMap, shapesPrefixMap).fold(e => throw new RuntimeException(s"Error parsing as ShapeMap str:$str\nError: $e"), identity)
-    }
-    fixMap <- {
-      fixShapeMap(queryMap, rdf, rdf.getPrefixMap, shapesPrefixMap) }
+    shapesPrefixMap: PrefixMap = PrefixMap.empty): IO[ResultShapeMap] =
+     for {
+      rdfPrefixMap <- rdf.getPrefixMap
+      queryMap <- IO {
+       Parser.parse(str, base, rdfPrefixMap, shapesPrefixMap).fold(e =>
+        throw new RuntimeException(s"Error parsing as ShapeMap str:$str\nError: $e"),
+        identity
+       )
+     }
+    fixMap <- fixShapeMap(queryMap, rdf, rdfPrefixMap, shapesPrefixMap)
   } yield {
-    ResultShapeMap(fixMap.shapeMap, rdf.getPrefixMap, shapesPrefixMap)
+    ResultShapeMap(fixMap.shapeMap, rdfPrefixMap, shapesPrefixMap)
   }
   /**
    * Resolve triple patterns according to an RDF
