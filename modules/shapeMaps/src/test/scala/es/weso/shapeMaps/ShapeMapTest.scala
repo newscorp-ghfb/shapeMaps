@@ -182,14 +182,14 @@ class ShapeMapTest extends AnyFunSpec with Matchers with TryValues with OptionVa
         PrefixMap.empty.addPrefix("", IRI("http://example.org/"))
 
       it(s"should fix $shapeMapStr and obtain $expectedStr") {
-        val v: IO[(ShapeMap,ShapeMap)] = RDFAsJenaModel.fromString(rdfStr,"TURTLE").use(rdf =>
+        val v: IO[(ShapeMap,ShapeMap)] = RDFAsJenaModel.fromString(rdfStr,"TURTLE").flatMap(_.use(rdf =>
           for {
           rdfPrefixMap <- rdf.getPrefixMap
           shapeMap <- either2IO(Parser.parse(shapeMapStr, None, rdfPrefixMap, shapesPrefixMap))
           expected <- either2IO(Parser.parse(expectedStr, None, rdfPrefixMap, shapesPrefixMap))
           obtained <- ShapeMap.fixShapeMap(shapeMap, rdf, rdfPrefixMap, shapesPrefixMap)
-        } yield (obtained,expected))
-        val (expected,obtained) = v.unsafeRunSync
+        } yield (obtained,expected)))
+        val (expected,obtained) = v.unsafeRunSync()
         obtained.associations should contain theSameElementsAs (expected.associations)
         
         /* RDFAsJenaModel.fromChars(rdfStr, "TURTLE") match {
@@ -240,14 +240,14 @@ class ShapeMapTest extends AnyFunSpec with Matchers with TryValues with OptionVa
             }
           } 
         } */
-        val r = RDFAsJenaModel.fromChars(rdfStr, "TURTLE").use(rdf => for {
+        val r = RDFAsJenaModel.fromChars(rdfStr, "TURTLE").flatMap(_.use(rdf => for {
           rdfPrefixMap <- rdf.getPrefixMap
           parsedSm <- fromES(
             Parser.parse(shapeMapStr, None, rdfPrefixMap, shapesPrefixMap).leftMap(err => s"Error parsing: ${shapeMapStr}:$err")
           )
           shownSm = parsedSm.toString
           parsedShown <- fromES(Parser.parse(shownSm, None, rdfPrefixMap, shapesPrefixMap).leftMap(err => s"Error parsing: ${shownSm}:$err"))
-        } yield (parsedSm,parsedShown))
+        } yield (parsedSm,parsedShown)))
          r.attempt.unsafeRunSync().fold(
            e => fail(s"Error: $e"),
            pair => {
