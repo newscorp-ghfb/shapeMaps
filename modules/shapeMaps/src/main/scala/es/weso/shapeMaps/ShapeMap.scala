@@ -13,6 +13,9 @@ import es.weso.rdf.path._
 import scala.io.Source
 import scala.util.Try
 import cats.effect.IO
+import java.nio.file.Path
+import es.weso.utils.FileUtils
+import scala.util.control.NoStackTrace
 
 abstract class ShapeMap {
   val associations: List[Association]
@@ -29,16 +32,71 @@ abstract class ShapeMap {
     this.asJson
   }
 
-  override def toString = Show[ShapeMap].show(this)
-
-  def serialize(format: String, base: Option[IRI] = None): Either[String,String] = {
+  def serialize( format: String, 
+                 base: Option[IRI] = None,
+                ): Either[String,String] = {
     ShapeMapFormat.fromString(format).map(_ match {
       case Compact => this.relativize(base).toString
       case JsonShapeMapFormat => this.toJson.spaces2
+      case CompactDetails => this.relativize(base).show
     })
   }
 
   def relativize(base: Option[IRI]): ShapeMap
+
+  private def showPattern(p: Pattern, pm: PrefixMap): String = p match {
+    case NodePattern(node) => pm.qualify(node)
+    case WildCard => "_"
+    case Focus => "FOCUS"
+  }
+
+  private def showPath(path: SHACLPath, pm: PrefixMap): String = path match {
+    case PredicatePath(`rdf:type`) => "a"
+    case PredicatePath(iri) => pm.qualify(iri)
+    case InversePath(path) => s"^${showPath(path, pm)}"
+    case SequencePath(paths) => paths.map(showPath(_, pm)).mkString("/")
+    case AlternativePath(paths) => paths.map(showPath(_,pm)).mkString("|")
+    case OneOrMorePath(path) => s"${showPath(path,pm)}+"
+    case ZeroOrMorePath(path) => s"${showPath(path,pm)}*"
+    case ZeroOrOnePath(path) => s"${showPath(path,pm)}?"
+  }
+
+  private def showNodeSelector(n: NodeSelector, pm: PrefixMap): String = {
+    n match {
+            case RDFNodeSelector(node) => pm.qualify(node)
+            case TriplePattern(sub, path, obj) => s"{${showPattern(sub,pm)} ${showPath(path,pm)} ${showPattern(obj,pm)}}"
+            case SparqlSelector(query) => s"""SPARQL `$query`"""
+    }
+  }
+
+  private def showShapeMapLabel(label: ShapeMapLabel, pm: PrefixMap): String = label match {
+          case IRILabel(iri) => pm.qualify(iri)
+          case BNodeLabel(bn) => "_:" ++ bn.getLexicalForm
+          case Start => "Start"
+  }
+
+  def showShapeMap(withDetails: Boolean): String = if (associations.isEmpty) 
+    s"# Empty shape map"
+   else 
+    associations.map(a => showAssociation(a, nodesPrefixMap, shapesPrefixMap, withDetails)).mkString(",\n")
+
+
+  override def toString: String = showShapeMap(withDetails = false)
+
+
+  private def showAssociation(
+    a: Association, 
+    nodesPrefixMap: PrefixMap, 
+    shapesPrefixMap: PrefixMap, 
+    withDetails: Boolean
+    ): String = {
+    s"${showNodeSelector(a.node, nodesPrefixMap)}@${if (a.info.status==NonConformant) "!" else ""}${showShapeMapLabel(a.shape,shapesPrefixMap)}${if (withDetails) showDetails(a.info) else ""}"
+  }
+
+  private def showDetails(info: Info): String = {
+    s" #${info.reason.getOrElse("")}"
+  }
+
 
 }
 
@@ -62,6 +120,30 @@ object ShapeMap {
      identity
    )
   }
+
+  case class ShapeMapFromPathException(msg: String, path: Path, format: String, base: Option[IRI], nodesPrefixMap: PrefixMap, shapesPrefixMap: PrefixMap) 
+    extends RuntimeException(s"""|Error obtaining shapeMap from path
+                                 |Msg: ${msg}
+                                 |Absolute path: ${path.toFile().getAbsolutePath()}
+                                 |Format: $format
+                                 |Base: ${base.map(_.getLexicalForm).getOrElse("")}
+                                 |NodesPrefixMap: ${nodesPrefixMap.toString()}
+                                 |ShapesPrefixMap: ${shapesPrefixMap.toString()}
+                                 |""".stripMargin) 
+    with NoStackTrace
+
+  def fromPath(path: Path, 
+      format: String, 
+      base: Option[IRI] = None, 
+      nodesPrefixMap: PrefixMap = PrefixMap.empty, 
+      shapesPrefixMap: PrefixMap = PrefixMap.empty): IO[ShapeMap] = for {
+    str <- FileUtils.getContents(path)
+    shapeMap <- fromString(str, format, base, nodesPrefixMap, shapesPrefixMap).fold(
+      str => IO.raiseError(ShapeMapFromPathException(str,path,format,base,nodesPrefixMap,shapesPrefixMap)),
+      v => v.pure[IO]
+    )
+  } yield shapeMap
+
   def fromString(str: String,
                  format: String,
                  base: Option[IRI] = None,
@@ -149,66 +231,9 @@ object ShapeMap {
   }
 
   implicit val showShapeMap: Show[ShapeMap] = new Show[ShapeMap] {
-
-    final def show(a: ShapeMap): String = {
-
-      implicit val showPattern: Show[Pattern] = new Show[Pattern] {
-        final def show(n: Pattern): String = {
-          n match {
-            case NodePattern(node) => a.nodesPrefixMap.qualify(node)
-            case WildCard => "_"
-            case Focus => "FOCUS"
-          }
-        }
-      }
-
-      /*implicit val showPredicate: Show[IRI] = new Show[IRI] {
-        final def show(iri: IRI): String = iri match {
-          case `rdf_type` => "a"
-          case _ => a.nodesPrefixMap.qualify(iri)
-        }
-      } */
-
-      implicit val showPath: Show[SHACLPath] = new Show[SHACLPath] {
-        final def show(path: SHACLPath): String = path match {
-          case PredicatePath(`rdf:type`) => "a"
-          case PredicatePath(iri) => a.nodesPrefixMap.qualify(iri)
-          case InversePath(path) => s"^${show(path)}"
-          case SequencePath(paths) => paths.map(show(_)).mkString("/")
-          case AlternativePath(paths) => paths.map(show(_)).mkString("|")
-          case OneOrMorePath(path) => s"${show(path)}+"
-          case ZeroOrMorePath(path) => s"${show(path)}*"
-          case ZeroOrOnePath(path) => s"${show(path)}?"
-        }
-      }
-
-      implicit val showNodeSelector: Show[NodeSelector] = new Show[NodeSelector] {
-        final def show(n: NodeSelector): String = {
-          n match {
-            case RDFNodeSelector(node) => a.nodesPrefixMap.qualify(node)
-            case TriplePattern(sub, path, obj) => s"{${sub.show} ${path.show} ${obj.show}}"
-            case SparqlSelector(query) => s"""SPARQL `$query`"""
-          }
-        }
-      }
-
-      implicit val showShapeMapLabel: Show[ShapeMapLabel] = new Show[ShapeMapLabel] {
-        final def show(label: ShapeMapLabel): String = label match {
-          case IRILabel(iri) => a.shapesPrefixMap.qualify(iri)
-          case BNodeLabel(bn) => "_:" ++ bn.getLexicalForm
-          case Start => "Start"
-        }
-      }
-
-      implicit val showAssociation: Show[Association] = new Show[Association] {
-        final def show(a: Association): String = {
-          s"${a.node.show}@${if (a.info.status==NonConformant) "!" else ""}${a.shape.show}"
-        }
-      }
-      if (a.associations.isEmpty) s"<EmptyShowMap>"
-      else a.associations.map(_.show).mkString(",")
-    }
+    final def show(s: ShapeMap): String = s.toString
   }
+
 
   implicit val decodeShapeMap: Decoder[ShapeMap] = Decoder.instance { c =>
     for {

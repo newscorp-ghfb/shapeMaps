@@ -228,18 +228,6 @@ class ShapeMapTest extends AnyFunSpec with Matchers with TryValues with OptionVa
     def shouldShowAndParse(shapeMapStr: String, rdfStr: String): Unit = {
       val shapesPrefixMap = PrefixMap.empty.addPrefix("", IRI("http://example.org/"))
       it(s"Should show and parse $shapeMapStr") {
-        /*RDFAsJenaModel.fromChars(rdfStr, "TURTLE") match {
-          case Left(e) => fail(s"Error parsing $rdfStr")
-          case Right(rdf) => {
-            Parser.parse(shapeMapStr, None, rdf.getPrefixMap, shapesPrefixMap) match {
-              case Left(msg) => fail(s"Error parsing ${shapeMapStr}: ${msg}")
-              case Right(shapeMap) => Parser.parse(shapeMap.toString, None, rdf.getPrefixMap, shapesPrefixMap) match {
-                case Left(msg) => fail(s"Error parsing shown shapeMap ${shapeMap.toString} of ${shapeMapStr}: ${msg}")
-                case Right(shownShapeMap) => shapeMap should be(shownShapeMap)
-              }
-            }
-          } 
-        } */
         val r = RDFAsJenaModel.fromChars(rdfStr, "TURTLE").flatMap(_.use(rdf => for {
           rdfPrefixMap <- rdf.getPrefixMap
           parsedSm <- fromES(

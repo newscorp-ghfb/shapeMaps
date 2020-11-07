@@ -14,13 +14,19 @@ object ShapeMapFormat {
           case Some(smf) => smf.asRight[String]
       }
 
-    def availableFormats: List[ShapeMapFormat] = List(Compact,JsonShapeMapFormat)
+    def availableFormats: List[ShapeMapFormat] = List(Compact,JsonShapeMapFormat,CompactDetails)
     def availableFormatNames: List[String] = availableFormats.map(_.name)
+    def defaultFormat: ShapeMapFormat = Compact
 }
 
 case object Compact extends ShapeMapFormat {
     def name = "compact"
 }
+
+case object CompactDetails extends ShapeMapFormat {
+    def name = "details"
+}
+
 
 case object JsonShapeMapFormat extends ShapeMapFormat {
     def name = "json"

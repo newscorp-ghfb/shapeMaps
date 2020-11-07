@@ -23,7 +23,7 @@ triplePattern    : '{' KW_FOCUS path (objectTerm | '_' ) '}' # focusSubject
                  | '{' (subjectTerm | '_') path KW_FOCUS '}' # focusObject
                  ;
 status           : negation | questionMark ;
-reason           : '/' string ;
+reason           : '//' string ;
 jsonAttributes   : '$' ; // TODO
 
 // SPARQL Grammar rule 82

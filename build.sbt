@@ -3,8 +3,8 @@ lazy val scala213 = "2.13.3"
 lazy val supportedScalaVersions = List(scala213, scala212)
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.75"
-lazy val utilsVersion          = "0.1.69"
+lazy val srdfVersion           = "0.1.76"
+lazy val utilsVersion          = "0.1.70"
 lazy val documentVersion       = "0.0.8"
 
 // Dependency versions
@@ -13,6 +13,7 @@ lazy val catsVersion           = "2.2.0"
 lazy val commonsTextVersion    = "1.8"
 lazy val circeVersion          = "0.14.0-M1"
 lazy val diffsonVersion        = "4.0.0"
+lazy val declineVersion        = "1.3.0"
 // lazy val effVersion            = "4.6.1"
 lazy val jenaVersion           = "3.16.0"
 lazy val jgraphtVersion        = "1.3.1"
@@ -45,6 +46,8 @@ lazy val circeCore         = "io.circe"                   %% "circe-core"       
 lazy val circeGeneric      = "io.circe"                   %% "circe-generic"       % circeVersion
 lazy val circeParser       = "io.circe"                   %% "circe-parser"        % circeVersion
 lazy val commonsText       = "org.apache.commons"         %  "commons-text"        % commonsTextVersion
+lazy val decline           = "com.monovore"               %% "decline"             % declineVersion
+lazy val declineEffect     = "com.monovore"               %% "decline-effect"      % declineVersion
 lazy val diffsonCirce      = "org.gnieh"                  %% "diffson-circe"       % diffsonVersion
 // lazy val eff               = "org.atnos"                  %% "eff"                 % effVersion
 lazy val jgraphtCore       = "org.jgrapht"                % "jgrapht-core"         % jgraphtVersion
@@ -95,6 +98,8 @@ lazy val shapeMapsRoot = project
       catsKernel,
       // catsMacros,
       catsEffect,
+      decline,
+      declineEffect,
       logbackClassic,
       scalaLogging,
       scallop,
