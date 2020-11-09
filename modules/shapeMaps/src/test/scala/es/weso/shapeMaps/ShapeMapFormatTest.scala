@@ -8,7 +8,7 @@ class ShapeMapFormatTest extends AnyFunSpec with Matchers with TryValues with Op
   describe("ShapeMapFormat") {
 
     it("should be able to get list of available formats") {
-      ShapeMapFormat.availableFormatNames should contain theSameElementsAs(List("compact","json"))
+      ShapeMapFormat.availableFormatNames should contain theSameElementsAs(List("compact","json","details"))
     }
 
     it(s"Should find a shapeMapFormat if it exists") {

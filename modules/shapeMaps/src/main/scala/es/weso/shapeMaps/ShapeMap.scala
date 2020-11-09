@@ -36,9 +36,9 @@ abstract class ShapeMap {
                  base: Option[IRI] = None,
                 ): Either[String,String] = {
     ShapeMapFormat.fromString(format).map(_ match {
-      case Compact => this.relativize(base).toString
+      case Compact => this.relativize(base).showShapeMap(withDetails = false)
       case JsonShapeMapFormat => this.toJson.spaces2
-      case CompactDetails => this.relativize(base).show
+      case CompactDetails => this.relativize(base).showShapeMap(withDetails = true)
     })
   }
 
@@ -75,10 +75,13 @@ abstract class ShapeMap {
           case Start => "Start"
   }
 
-  def showShapeMap(withDetails: Boolean): String = if (associations.isEmpty) 
+  def showShapeMap(withDetails: Boolean): String = { 
+   val sep = if (withDetails) ",\n" else ", "
+   if (associations.isEmpty) 
     s"# Empty shape map"
    else 
-    associations.map(a => showAssociation(a, nodesPrefixMap, shapesPrefixMap, withDetails)).mkString(",\n")
+    associations.map(a => showAssociation(a, nodesPrefixMap, shapesPrefixMap, withDetails)).mkString(sep)
+  }
 
 
   override def toString: String = showShapeMap(withDetails = false)
@@ -94,7 +97,9 @@ abstract class ShapeMap {
   }
 
   private def showDetails(info: Info): String = {
-    s" #${info.reason.getOrElse("")}"
+    val tab = " " * 3
+    val str = info.reason.getOrElse("").linesIterator.map(line => s"${tab}# ${line}").mkString("\n")
+    s"\n$str"
   }
 
 

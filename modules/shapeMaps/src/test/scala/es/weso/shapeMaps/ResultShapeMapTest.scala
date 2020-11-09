@@ -5,8 +5,15 @@ import es.weso.rdf.nodes._
 import org.scalatest._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
+import es.weso.rdf.PrefixMap
 
-class ResultShapeMapTest extends AnyFunSpec with Matchers with TryValues with OptionValues {
+class ResultShapeMapTest 
+ extends AnyFunSpec 
+ with Matchers 
+ with TryValues 
+ with OptionValues 
+ with EitherValues
+ {
 
 /*  describe("ResultShapeMaps") {
     val rdfStr =
@@ -112,4 +119,15 @@ class ResultShapeMapTest extends AnyFunSpec with Matchers with TryValues with Op
       rm.getInfo(z,u).status should be(Undefined)
     }
   } */
+
+  describe(s"ShowResultShapeMap") {
+    it(s"Should show resultShapeMap with details") {
+      val ex = IRI("http://example.org/")
+      val x = ex + "x"
+      val s = IRILabel(ex+"S")
+      val info = Info(status = Conformant, reason = Some("Reason"))
+      val result = ResultShapeMap(Map(x -> Map(s -> info)), PrefixMap.empty, PrefixMap.empty) 
+      result.serialize("details").right.value should be("<http://example.org/x>@<http://example.org/S>\n   # Reason") 
+    }
+  }
 }
