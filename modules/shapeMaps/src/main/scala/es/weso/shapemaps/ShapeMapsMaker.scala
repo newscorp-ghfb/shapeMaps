@@ -1,12 +1,12 @@
-package es.weso.shapeMaps
+package es.weso.shapemaps
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.PREFIXES._
 import es.weso.rdf.PrefixMap
 import es.weso.rdf.nodes._
 import es.weso.rdf.path._
-import es.weso.shapeMaps.Parser._
-import es.weso.shapeMaps.parser.ShapeMapParser.{StringContext => ShapeMapStringContext, _}
-import es.weso.shapeMaps.parser._
+import es.weso.shapemaps.Parser._
+import es.weso.shapemaps.parser.ShapeMapParser.{StringContext => ShapeMapStringContext, _}
+import es.weso.shapemaps.parser._
 import es.weso.utils.{EitherUtils, FileUtils}
 import io.circe.Json
 

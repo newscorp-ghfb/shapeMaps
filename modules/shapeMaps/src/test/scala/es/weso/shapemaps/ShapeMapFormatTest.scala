@@ -1,4 +1,4 @@
-package es.weso.shapeMaps
+package es.weso.shapemaps
 import org.scalatest._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers

@@ -1,12 +1,12 @@
-package es.weso.shapeMaps
+package es.weso.shapemaps
 
 import io.circe._
 import io.circe.syntax._
 
 case class Info(
-  status: Status = Conformant,
-  reason: Option[String] = None,
-  appInfo: Option[Json] = None)
+  val status: Status = Conformant,
+  val reason: Option[String] = None,
+  val appInfo: Option[Json] = None)
 
 object Info {
   implicit val encodeInfo: Encoder[Info] = new Encoder[Info] {

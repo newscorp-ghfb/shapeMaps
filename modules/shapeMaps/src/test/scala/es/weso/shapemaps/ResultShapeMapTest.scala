@@ -1,4 +1,4 @@
-package es.weso.shapeMaps
+package es.weso.shapemaps
 
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes._

@@ -1,22 +1,25 @@
 lazy val scala212 = "2.12.12"
-lazy val scala213 = "2.13.3"
+lazy val scala213 = "2.13.4"
 lazy val supportedScalaVersions = List(scala213, scala212)
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.76"
-lazy val utilsVersion          = "0.1.70"
+lazy val srdfVersion           = "0.1.90"
+lazy val utilsVersion          = "0.1.73"
 lazy val documentVersion       = "0.0.8"
 
 // Dependency versions
 lazy val antlrVersion          = "4.7.1"
-lazy val catsVersion           = "2.2.0"
+lazy val catsVersion           = "2.3.0"
 lazy val commonsTextVersion    = "1.8"
 lazy val circeVersion          = "0.14.0-M1"
 lazy val diffsonVersion        = "4.0.0"
 lazy val declineVersion        = "1.3.0"
+lazy val fs2Version            = "2.5.0"
 // lazy val effVersion            = "4.6.1"
 lazy val jenaVersion           = "3.16.0"
 lazy val jgraphtVersion        = "1.3.1"
+lazy val munitVersion          = "0.7.21"
+lazy val munitEffectVersion    = "0.11.0"
 lazy val logbackVersion        = "1.2.3"
 lazy val loggingVersion        = "3.9.2"
 lazy val rdf4jVersion          = "3.0.0"
@@ -50,10 +53,17 @@ lazy val decline           = "com.monovore"               %% "decline"          
 lazy val declineEffect     = "com.monovore"               %% "decline-effect"      % declineVersion
 lazy val diffsonCirce      = "org.gnieh"                  %% "diffson-circe"       % diffsonVersion
 // lazy val eff               = "org.atnos"                  %% "eff"                 % effVersion
+lazy val fs2               = "co.fs2"                     %% "fs2-core"            % fs2Version 
+lazy val fs2io             = "co.fs2"                     %% "fs2-io"            % fs2Version 
+
 lazy val jgraphtCore       = "org.jgrapht"                % "jgrapht-core"         % jgraphtVersion
 lazy val logbackClassic    = "ch.qos.logback"             % "logback-classic"      % logbackVersion
 lazy val jenaArq           = "org.apache.jena"            % "jena-arq"             % jenaVersion
 lazy val jenaFuseki        = "org.apache.jena"            % "jena-fuseki-main"     % jenaVersion
+lazy val munit             = "org.scalameta"              %% "munit"               % munitVersion
+lazy val munitEffect       = "org.typelevel"              %% "munit-cats-effect-2" % munitEffectVersion
+
+
 lazy val rdf4j_runtime     = "org.eclipse.rdf4j"          % "rdf4j-runtime"        % rdf4jVersion
 
 // WESO components
@@ -83,12 +93,16 @@ lazy val simulacrum        = "org.typelevel"              %% "simulacrum"       
 lazy val shapeMapsRoot = project
   .in(file("."))
   .enablePlugins(ScalaUnidocPlugin, SbtNativePackager, WindowsPlugin, JavaAppPackaging, LauncherJarPlugin)
-  .disablePlugins(RevolverPlugin)
+//  .disablePlugins(RevolverPlugin)
 //  .settings(
 //    buildInfoKeys := BuildInfoKey.ofN(name, version, scalaVersion, sbtVersion),
 //    buildInfoPackage := "es.weso.shaclex.buildinfo" 
 //  )
-  .settings(commonSettings, packagingSettings, publishSettings, ghPagesSettings, wixSettings)
+  .settings(commonSettings, 
+    packagingSettings, 
+    publishSettings, 
+    // ghPagesSettings,
+    wixSettings)
   .aggregate(shapeMaps)
   .dependsOn(shapeMaps)
   .settings(
@@ -121,8 +135,8 @@ def testFilter(name: String): Boolean = /*(name endsWith "Test") && */ !compatFi
 lazy val shapeMaps = project
   .in(file("modules/shapeMaps"))
   .enablePlugins(Antlr4Plugin)
-  .disablePlugins(RevolverPlugin)
-  .settings(commonSettings, publishSettings, antlrSettings("es.weso.shapeMaps.parser"))
+//  .disablePlugins(RevolverPlugin)
+  .settings(commonSettings, publishSettings, antlrSettings("es.weso.shapemaps.parser"))
   .dependsOn()
   .settings(
     crossScalaVersions := supportedScalaVersions,
@@ -134,11 +148,14 @@ lazy val shapeMaps = project
       scalaLogging,
       catsCore,
       catsKernel,
-      // catsMacros,
       circeCore,
       circeGeneric,
-      circeParser
-      )
+      circeParser,
+      fs2, fs2io,
+      munit % Test,
+      munitEffect % Test
+      ),
+    testFrameworks += new TestFramework("munit.Framework")
   )
 
 def macroDependencies(scalaVersion: String) =
@@ -167,8 +184,8 @@ lazy val sharedDependencies = Seq(
 )
 
 lazy val packagingSettings = Seq(
-  mainClass in Compile        := Some("es.weso.shapeMaps.Main"),
-  mainClass in assembly       := Some("es.weso.shapeMaps.Main"),
+  mainClass in Compile        := Some("es.weso.shapemaps.Main"),
+  mainClass in assembly       := Some("es.weso.shapemaps.Main"),
   test in assembly            := {},
   assemblyJarName in assembly := "shapeMaps.jar",
   packageSummary in Linux     := name.value,
@@ -220,9 +237,9 @@ lazy val wixSettings = Seq(
 // wixProductUpgradeId := "4552fb0e-e257-4dbd-9ecb-dba9dbacf424"
 )
 
-lazy val ghPagesSettings = Seq(
+/*lazy val ghPagesSettings = Seq(
   git.remoteRepo := "git@github.com:weso/shapeMaps.git"
-)
+)*/
 
 lazy val commonSettings = compilationSettings ++ sharedDependencies ++ Seq(
   organization := "es.weso",

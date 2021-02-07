@@ -1,4 +1,4 @@
-package es.weso.shapeMaps
+package es.weso.shapemaps
 
 import es.weso.rdf.nodes._
 import cats._
@@ -16,6 +16,9 @@ import cats.effect.IO
 import java.nio.file.Path
 import es.weso.utils.FileUtils
 import scala.util.control.NoStackTrace
+import java.io.InputStreamReader
+import java.io.InputStream
+import cats.data.NonEmptyList
 
 abstract class ShapeMap {
   val associations: List[Association]
@@ -109,26 +112,39 @@ object ShapeMap {
 
   def availableFormats: List[String] = ShapeMapFormat.availableFormatNames
   def empty: ShapeMap = FixedShapeMap.empty
+
+  def fromInputStream(
+    is: InputStream, 
+    format: String, 
+    base: Option[IRI], 
+    nodesPrefixMap: PrefixMap,
+    shapesPrefixMap: PrefixMap
+    ): Either[NonEmptyList[String],ShapeMap] = {
+      val reader = new InputStreamReader(is)
+      Parser.parseReader(reader, base, nodesPrefixMap, shapesPrefixMap)
+    }
+
   def fromURI(uri: String,
               format: String,
               base: Option[IRI],
               nodesPrefixMap: PrefixMap,
-              shapesPrefixMap: PrefixMap): Either[String, ShapeMap] = {
+              shapesPrefixMap: PrefixMap): IO[Either[NonEmptyList[String], ShapeMap]] = {
    val t = Try {
       val contents = Source.fromURL(uri).mkString
-      val either: Either[String, ShapeMap] = {
+      val either: Either[NonEmptyList[String], ShapeMap] = {
         fromString(contents, format, base, nodesPrefixMap, shapesPrefixMap)
       }
       either
     }
-   t.fold(e => Left(s"Exception obtaining URI contents. URI = ${uri}. Error: ${e.getLocalizedMessage}"),
-     identity
+   t.fold(
+     e => IO.raiseError(new RuntimeException(s"Exception obtaining URI contents. URI = ${uri}. Error: ${e.getLocalizedMessage}")),
+     e => IO.pure(e)
    )
   }
 
-  case class ShapeMapFromPathException(msg: String, path: Path, format: String, base: Option[IRI], nodesPrefixMap: PrefixMap, shapesPrefixMap: PrefixMap) 
+  case class ShapeMapFromPathException(errors: NonEmptyList[String], path: Path, format: String, base: Option[IRI], nodesPrefixMap: PrefixMap, shapesPrefixMap: PrefixMap) 
     extends RuntimeException(s"""|Error obtaining shapeMap from path
-                                 |Msg: ${msg}
+                                 |Errors: ${errors.toList.mkString("\n")}
                                  |Absolute path: ${path.toFile().getAbsolutePath()}
                                  |Format: $format
                                  |Base: ${base.map(_.getLexicalForm).getOrElse("")}
@@ -143,37 +159,37 @@ object ShapeMap {
       nodesPrefixMap: PrefixMap = PrefixMap.empty, 
       shapesPrefixMap: PrefixMap = PrefixMap.empty): IO[ShapeMap] = for {
     str <- FileUtils.getContents(path)
-    shapeMap <- fromString(str, format, base, nodesPrefixMap, shapesPrefixMap).fold(
-      str => IO.raiseError(ShapeMapFromPathException(str,path,format,base,nodesPrefixMap,shapesPrefixMap)),
-      v => v.pure[IO]
+    sm <- fromString(str, format, base, nodesPrefixMap, shapesPrefixMap).fold(
+      nes => IO.raiseError(ShapeMapFromPathException(nes,path,format,base,nodesPrefixMap,shapesPrefixMap)),
+      sm => IO.pure(sm)
     )
-  } yield shapeMap
+  } yield sm
 
   def fromString(str: String,
                  format: String,
                  base: Option[IRI] = None,
                  nodesPrefixMap: PrefixMap = PrefixMap.empty,
                  shapesPrefixMap: PrefixMap = PrefixMap.empty
-                ): Either[String,ShapeMap] =
+                ): Either[NonEmptyList[String],ShapeMap] =
     format.toUpperCase match {
      case "JSON" => fromJson(str)
      case "COMPACT" => {
        fromCompact(str,base,nodesPrefixMap,shapesPrefixMap)
      }
-     case _ => Left(s"Unknown format for shapeMap")
+     case _ => Left(NonEmptyList.one(s"Unknown format for shapeMap"))
    }
 
   def fromCompact(
     str: String,
     base: Option[IRI] = None,
     nodesPrefixMap: PrefixMap = PrefixMap.empty,
-    shapesPrefixMap: PrefixMap = PrefixMap.empty): Either[String, ShapeMap] = {
+    shapesPrefixMap: PrefixMap = PrefixMap.empty): Either[NonEmptyList[String], ShapeMap] = {
     if (str.isEmpty) Right(ShapeMap.empty)
     else Parser.parse(str, base, nodesPrefixMap, shapesPrefixMap)
   }
 
-  def fromJson(jsonStr: String): Either[String, ShapeMap] = {
-    decode[ShapeMap](jsonStr).leftMap(_.getMessage)
+  def fromJson(jsonStr: String): Either[NonEmptyList[String], ShapeMap] = {
+    decode[ShapeMap](jsonStr).leftMap(s => NonEmptyList.one(s.getMessage))
   }
 
   def parseResultMap(

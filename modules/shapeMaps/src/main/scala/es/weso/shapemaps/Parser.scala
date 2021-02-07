@@ -1,4 +1,4 @@
-package es.weso.shapeMaps
+package es.weso.shapemaps
 
 import java.io.{ByteArrayInputStream, InputStreamReader, Reader => JavaReader}
 import java.nio.charset.StandardCharsets
@@ -6,8 +6,10 @@ import java.nio.charset.StandardCharsets
 import com.typesafe.scalalogging._
 import es.weso.rdf._
 import es.weso.rdf.nodes.IRI
-import es.weso.shapeMaps.parser.{ShapeMapLexer, ShapeMapParser}
+import es.weso.shapemaps.parser.{ShapeMapLexer, ShapeMapParser}
 import org.antlr.v4.runtime._
+import cats.data._
+import cats.implicits._
 
 object Parser extends LazyLogging {
 
@@ -31,18 +33,18 @@ object Parser extends LazyLogging {
     str: String,
     base: Option[IRI],
     nodesPrefixMap: PrefixMap,
-    shapesPrefixMap: PrefixMap): Either[String, QueryShapeMap] = {
+    shapesPrefixMap: PrefixMap): Either[NonEmptyList[String], QueryShapeMap] = {
     val s = removeBOM(str)
     val reader: JavaReader =
       new InputStreamReader(new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8)))
-    parseSchemaReader(reader, base, nodesPrefixMap, shapesPrefixMap)
+    parseReader(reader, base, nodesPrefixMap, shapesPrefixMap)
   }
 
-  def parseSchemaReader(
+  def parseReader(
     reader: JavaReader,
     base: Option[IRI],
     nodesPrefixMap: PrefixMap,
-    shapesPrefixMap: PrefixMap): Either[String, QueryShapeMap] = {
+    shapesPrefixMap: PrefixMap): Either[NonEmptyList[String], QueryShapeMap] = {
     val input: CharStream = CharStreams.fromReader(reader)
     val lexer: ShapeMapLexer = new ShapeMapLexer(input)
     val tokens: CommonTokenStream = new CommonTokenStream(lexer)
@@ -55,11 +57,10 @@ object Parser extends LazyLogging {
     val maker = new ShapeMapsMaker(base,nodesPrefixMap,shapesPrefixMap)
     val builder = maker.visit(parser.shapeMap()).asInstanceOf[Builder[QueryShapeMap]]
     val errors = errorListener.getErrors
-    if (errors.length > 0) {
-      Left(errors.mkString("\n"))
-    } else {
-      builder
-    }
+    NonEmptyList.fromList(errors).fold(
+      builder.leftMap(NonEmptyList.one(_)))(
+      _.asLeft
+    )
   }
 
 }

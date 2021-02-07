@@ -1,4 +1,4 @@
-package es.weso.shapeMaps
+package es.weso.shapemaps
 import cats.implicits._
 
 sealed abstract class ShapeMapFormat {

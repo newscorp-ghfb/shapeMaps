@@ -1,4 +1,4 @@
-package es.weso.shapeMaps
+package es.weso.shapemaps
 
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
@@ -6,9 +6,9 @@ import es.weso.rdf.PREFIXES._
 import es.weso.rdf.PrefixMap
 import es.weso.rdf.nodes._
 import es.weso.rdf.path._
-import es.weso.shapeMaps.Parser._
-import es.weso.shapeMaps.parser.NodeSelectorBaseVisitor
-import es.weso.shapeMaps.parser.NodeSelectorParser.{StringContext => ShapeMapStringContext, _}
+import es.weso.shapemaps.Parser._
+import es.weso.shapemaps.parser.NodeSelectorBaseVisitor
+import es.weso.shapemaps.parser.NodeSelectorParser.{StringContext => ShapeMapStringContext, _}
 import es.weso.utils.FileUtils
 import scala.jdk.CollectionConverters._
 

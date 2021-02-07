@@ -1,11 +1,10 @@
-package es.weso.shapeMaps
+package es.weso.shapemaps
 
 import cats.effect._
 import cats.implicits._
 import com.monovore.decline._
 import com.monovore.decline.effect._
 import java.nio.file.Path
-import es.weso.utils.IOUtils._
 
 object ShapeMapOpts {
 
@@ -61,7 +60,10 @@ object Main extends CommandIOApp(
 
   private def getShapeMap(sm: OptShapeMap, format: String): IO[ShapeMap] = sm match {
     case OptShapeMapPath(path) => ShapeMap.fromPath(path,format)
-    case OptShapeMapStr(str) => fromES(ShapeMap.fromString(str, format))
+    case OptShapeMapStr(str) => ShapeMap.fromString(str, format).fold(
+      es => IO.raiseError(new RuntimeException(s"Error obtaining shapeMap from string: $str with format $format: ${es.toList.mkString("\n")}")),
+      v => IO.pure(v)
+    )
   }
 
   

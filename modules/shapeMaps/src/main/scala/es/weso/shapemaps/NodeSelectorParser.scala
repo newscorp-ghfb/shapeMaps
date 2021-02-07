@@ -1,11 +1,11 @@
-package es.weso.shapeMaps
+package es.weso.shapemaps
 
 import java.io.{ByteArrayInputStream, InputStreamReader, Reader => JavaReader}
 import java.nio.charset.StandardCharsets
 
 import com.typesafe.scalalogging._
 import es.weso.rdf._
-import es.weso.shapeMaps.parser.{NodeSelectorLexer, NodeSelectorParser}
+import es.weso.shapemaps.parser.{NodeSelectorLexer, NodeSelectorParser}
 import org.antlr.v4.runtime._
 
 object ParserNodeSelector extends LazyLogging {
